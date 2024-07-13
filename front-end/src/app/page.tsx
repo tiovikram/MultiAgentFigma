@@ -1,6 +1,8 @@
 import Image from "next/image";
 import styles from "./page.module.css";
 
+import { Box } from "@chakra-ui/react";
+
 export default function Home() {
   return (
     <main className={styles.main}>
@@ -90,6 +92,9 @@ export default function Home() {
           </p>
         </a>
       </div>
+			<Box>
+			  Put your stuff here
+			</Box>
     </main>
   );
 }
