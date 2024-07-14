@@ -23,6 +23,7 @@ from meadow.database.connector.duckdb import DuckDBConnector
 from meadow.database.connector.sqlite import SQLiteConnector
 from meadow.database.database import Database
 
+AGENTS = {"AttributeDetectorAgent": AttributeDetectorAgent, "SchemaRenamerAgent": SchemaRenamerAgent, "SQLGeneratorAgent": SQLGeneratorAgent}
 
 def get_full_text2sql_agent(
     user_agent: UserAgent,
@@ -70,6 +71,35 @@ def get_full_text2sql_agent(
     return controller
 
 
+def create_controller(names: list[str], client, llm_config, database, overwrite_cache, big_client, user_agent, auto_advance) -> ControllerAgent:
+    # Create the agents
+    agents = []
+    for name in names:
+        agent = AGENTS[name](
+            client=client,
+            llm_config=llm_config,
+            database=database,
+            overwrite_cache=overwrite_cache,
+        )
+        agents.append(agent)
+
+    planner = PlannerAgent(
+        available_agents=agents,
+        client=big_client,
+        llm_config=llm_config,
+        database=database,
+        constraints=[attribute_detector_constraints, sql_agent_constraints],
+        overwrite_cache=overwrite_cache,
+    )
+    return ControllerAgent(
+        supervisor=user_agent,
+        planner=planner,
+        database=database,
+        silent=True,
+        supervisor_auto_respond=auto_advance,
+    )
+
+
 def run_meadow(
     api_provider: str,
     api_key: str,
@@ -78,6 +108,7 @@ def run_meadow(
     model: str,
     instruction: str,
     auto_advance: bool,
+    names: list[str],
 ) -> None:
     """Main."""
     if not instruction:
@@ -112,20 +143,15 @@ def run_meadow(
         temperature=0.0,
     )
     user = UserAgent(name="User", silent=False)
-    controller = get_full_text2sql_agent(
-        user_agent=user,
-        client=client,
-        big_client=big_client,
-        llm_config=llm_config,
-        database=database,
-        auto_advance=auto_advance,
-        overwrite_cache=False,
-    )
+    controller = create_controller(names, client, llm_config, database, False, big_client, user, auto_advance)
     asyncio.run(controller.initiate_chat(instruction))
     all_messages = controller.get_messages(user)
     print("****FINAL MESSAGES TO/FROM USER****")
+    output = []
     for msg in all_messages:
         print_message(msg, msg.sending_agent, msg.receiving_agent)
+        output.append(msg)
+    return output
 
 
 if __name__ == "__main__":

@@ -1,100 +1,53 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
 
-import { Box } from "@chakra-ui/react";
+import { useState } from "react";
+import { Box, Input, HStack, VStack, Text, Button} from "@chakra-ui/react";
+
+import BaseAgent from "./base-agent";
+import SideMenu from "./SideMenu";
 
 export default function Home() {
+
+  const [agentData, setAgentData] = useState<string[]>([]);
+  const [promptResponse, setPromptResponse] = useState<string>("");
+
+  function createNewAgent(parentAgentId: number, agentType: string) : void {
+    setAgentData([...agentData.slice(0, parentAgentId + 1), agentType, ...agentData.slice(parentAgentId + 1)])
+  }
+
+  function callExecuteDemo() {
+
+  }
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-			<Box>
-			  Put your stuff here
+      <HStack>
+			<Box
+        w="100wh"
+        h="100vh"
+        padding={5}
+      >
+        <HStack>
+          <BaseAgent id={0} createNewAgent={createNewAgent} type="User"/>
+          {
+            agentData.map((value: string, index: number) => {
+              return <BaseAgent id={index} key={value} type={value} createNewAgent={createNewAgent}/>
+            })
+          }
+        </HStack>
+        <HStack alignItems="flex-end" justifyContent="flex-end">
+          <Input placeholder="query"/>
+          <Button
+            colorScheme="teal"
+            onClick={async () => {
+              const response = await fetch(`http://localhost:5000/execute_demo?model=gpt-4o&api_key=<OPENAI_API_KEY>&selected_available_agents=AttributeDetectorAgent,SchemaRenamerAgent,SQLGeneratorAgent`);
+              const data = await response.json();
+              setPromptResponse(data["last_meadow_response"]);
+            }}
+          >Execute</Button>
+        </HStack>
+        <Text>{promptResponse}</Text>
 			</Box>
-    </main>
+      <SideMenu />
+      </HStack>
   );
 }

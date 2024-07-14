@@ -26,7 +26,7 @@ from meadow.database.connector.connector import Connector
 from meadow.database.connector.duckdb import DuckDBConnector
 from meadow.database.connector.sqlite import SQLiteConnector
 from meadow.database.database import Database
-from demo import run_meadow
+from .demo import run_meadow
 
 app = Flask(__name__)
 
@@ -39,14 +39,60 @@ def hello_world():
 def execute_demo():
     api_provider = request.args.get('api_provider', 'openai')
     api_key = request.args.get('api_key', None)
-    model = request.args.get('model', None)
+    model = request.args.get('model', 'gpt-4o')
     selected_available_agents = request.args.get('selected_available_agents', None)
-    db_type = request.args.get('db_type', None)
-    db_path = request.args.get('db_path', None)
-    instruction = request.args.get('instruction', None)
-    auto_advance = request.args.get('auto_advance', None)
+    db_type = request.args.get('db_type', 'sqlite')
+    db_path = request.args.get('db_path', 'data/sales_example.sqlite')
+    instruction = request.args.get('instruction', 'How many cars are there?')
+    auto_advance = request.args.get('auto_advance', True)
 
     api_client = OpenAIClient(api_key=api_key)
+
+    output = run_meadow(
+        api_provider,
+        api_key,
+        db_type,
+        db_path,
+        model,
+        instruction,
+        auto_advance,
+        selected_available_agents.split(","),
+    )
+    output_str = ""
+    for o in output:
+        print(o.content)
+        output_str+= o.content + "\n"
+
+    data = {
+        'api_provider': api_provider,
+        'api_key': api_key,
+        'model': model,
+        'selected_available_agents': selected_available_agents,
+        'db_type': db_type,
+        'db_path': db_path,
+        'instruction': instruction,
+        'auto_advance': auto_advance,
+        'meadow_response': output_str,
+        'last_meadow_response': output[len(output) - 2].content,
+    }
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        headers={'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+        mimetype='application/json'
+    )
+    return response
+
+
+if __name__ == "__main__":
+    api_provider = 'openai'
+    api_key = '<OPENAI_API_KEY>'
+    model = 'gpt-4o'
+    selected_available_agents = ["AttributeDetectorAgent", "SchemaRenamerAgent", "SQLGeneratorAgent"]
+    db_type = 'sqlite'
+    db_path = 'data/sales_example.sqlite'
+    instruction = 'How many cars are there?'
+    auto_advance = True
 
     run_meadow(
         api_provider,
@@ -56,18 +102,6 @@ def execute_demo():
         model,
         instruction,
         auto_advance,
+        selected_available_agents.split(",")
     )
 
-    data = {
-        'api_provider': api_provider,
-        'api_key': api_key,
-        'model': model,
-        'selected_available_agents': selected_available_agents,
-        'meadow_response': 'This response will be updated after meadow integration',
-    }
-    response = app.response_class(
-        response=json.dumps(data),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
