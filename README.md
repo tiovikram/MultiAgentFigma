@@ -15,6 +15,9 @@ cd back-end
 [start virtual environment]
 
 pip install -r requirements.txt
+
+
+cd back-end/meadow/examples
 flask --app backend_server --debug run
 
 http://127.0.0.1:5000/

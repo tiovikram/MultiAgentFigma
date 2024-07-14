@@ -26,6 +26,7 @@ from meadow.database.connector.connector import Connector
 from meadow.database.connector.duckdb import DuckDBConnector
 from meadow.database.connector.sqlite import SQLiteConnector
 from meadow.database.database import Database
+from demo import run_meadow
 
 app = Flask(__name__)
 
@@ -40,10 +41,23 @@ def execute_demo():
     api_key = request.args.get('api_key', None)
     model = request.args.get('model', None)
     selected_available_agents = request.args.get('selected_available_agents', None)
-
+    db_type = request.args.get('db_type', None)
+    db_path = request.args.get('db_path', None)
+    instruction = request.args.get('instruction', None)
+    auto_advance = request.args.get('auto_advance', None)
 
     api_client = OpenAIClient(api_key=api_key)
-    
+
+    run_meadow(
+        api_provider,
+        api_key,
+        db_type,
+        db_path,
+        model,
+        instruction,
+        auto_advance,
+    )
+
     data = {
         'api_provider': api_provider,
         'api_key': api_key,
